@@ -5,6 +5,9 @@ import argparse
 
 env = simpy.Environment()
 
+def clamp(num, min_value, max_value):
+   return max(min(num, max_value), min_value)
+
 # Constants of the simulation. Assuming that time is in minutes
 NUM_PREPARATION_FACILITIES = 3
 NUM_OPERATION_FACILITIES = 1
@@ -13,10 +16,10 @@ AVG_PREPARATION_TIME = 40
 AVG_OPERATION_TIME = 20
 AVG_RECOVERY_TIME = 40
 PATIENT_INTERARRIVAL_TIME = 24
-SIM_TIME = 60*100
+SIM_TIME = 60*10
 COMPLICATION_RATIO = 0.01 # If complications happen during the operation,
 # patient will skip recovery and go to ER instead
-DEBUG = False # If true, print logs during the simulation
+DEBUG = True # If true, print logs during the simulation
 RANDOM_SEED = None # Set to none if don't want to use seed
 
 np.random.seed(RANDOM_SEED)
@@ -40,7 +43,7 @@ class FacilitiesManager:
   def preparation(self, patient):
     if self.debug: print(f"{patient} enters preparation facility at {self.env.now:.2f}")
     patient.preparation_start_time = float(self.env.now)
-    random_time = max(1, np.random.normal(AVG_PREPARATION_TIME, 4))
+    random_time = clamp(np.random.normal(AVG_PREPARATION_TIME, 4), AVG_PREPARATION_TIME - 5, AVG_PREPARATION_TIME + 5)
     yield self.env.timeout(random_time)
     if self.debug: print(f"{patient} leaves preparation facility at {self.env.now:.2f}")
     patient.preparation_end_time = float(self.env.now)
@@ -48,7 +51,7 @@ class FacilitiesManager:
   def operation(self, patient):
     if self.debug: print(f"{patient} enters operation facility at {self.env.now:.2f}")
     patient.operation_start_time = float(self.env.now)
-    random_time = max(1, np.random.normal(AVG_OPERATION_TIME, 4))
+    random_time = clamp(np.random.normal(AVG_OPERATION_TIME, 4), AVG_OPERATION_TIME - 5, AVG_OPERATION_TIME + 5)
     yield self.env.timeout(random_time)
     if self.debug: print(f"{patient} leaves operation facility at {self.env.now:.2f}")
     patient.operation_end_time = float(self.env.now)
@@ -63,7 +66,7 @@ class FacilitiesManager:
     else:
       if self.debug: print(f"{patient} enters recovery facility at {self.env.now:.2f}")
       patient.recovery_start_time = float(self.env.now)
-      random_time = max(1, np.random.normal(AVG_RECOVERY_TIME, 4))
+      random_time = clamp(np.random.normal(AVG_RECOVERY_TIME, 4), AVG_RECOVERY_TIME - 5, AVG_RECOVERY_TIME + 5)
       yield self.env.timeout(random_time)
       if self.debug: print(f"{patient} has left recovery facility at {self.env.now:.2f}")
       patient.recovery_end_time = float(self.env.now)
@@ -128,19 +131,9 @@ class Dataset:
   """Stores and analyzes the data of all patients that arrive at the hospital. When patient has been treated
   and they are ready to leave, their information is saved into the dataset."""
   _patients = []
-  _sum_preparation_time = 0
-  _sum_operation_time = 0
-  _sum_recovery_time = 0
-  _sum_queue_time = 0
-  _sum_total_time = 0
 
   def add_patient(self, patient):
     Dataset._patients.append(patient)
-    Dataset._sum_preparation_time += patient.preparation_end_time - patient.preparation_start_time
-    Dataset._sum_operation_time += patient.operation_end_time - patient.operation_start_time
-    Dataset._sum_recovery_time += patient.recovery_end_time - patient.recovery_start_time
-    Dataset._sum_queue_time += patient.preparation_start_time - patient.arrival_time 
-    Dataset._sum_total_time += patient.recovery_end_time - patient.arrival_time
 
   def get_dataset(self):
     temp_list = []
@@ -190,7 +183,7 @@ env.run(until=SIM_TIME)
 print("Simulation ended!") 
 print("Patients arrived: ", Patient.patients_num)
 print("Patients treated: ", Patient.patients_treated)
-# print(Patient.get_data_headers())
-# print(dataset)
+print(Patient.get_data_headers())
+print(dataset)
 dataset.analyze()
 
