@@ -59,7 +59,7 @@ class FacilitiesManager:
   def preparation(self, patient):
     self.logger.log(f"{patient} enters preparation facility at {self.env.now:.2f}", 5)
     patient.preparation_start_time = float(self.env.now)
-    random_time = random.expovariate(1/self.prep_time)
+    random_time = np.random.exponential(scale=self.prep_time)
     self.logger.log(f"{patient} preparation time is {random_time}")
     yield self.env.timeout(random_time)
     self.logger.log(f"  {patient} leaves preparation facility at {self.env.now:.2f}", 5)
@@ -69,7 +69,7 @@ class FacilitiesManager:
     self.logger.log(f"{patient} enters operation facility at {self.env.now:.2f}", 5)
     patient.dataset.operation_block_time += float(self.env.now) - patient.preparation_end_time
     patient.operation_start_time = float(self.env.now)
-    random_time = random.expovariate(1/self.op_time)
+    random_time = np.random.exponential(scale=self.op_time)
     self.logger.log(f"{patient} operation time is {random_time}")
     yield self.env.timeout(random_time)
     if (self.include_twist and np.random.uniform(0, 1) <= self.compl_ratio):
@@ -86,7 +86,7 @@ class FacilitiesManager:
   def recovery(self, patient):
     self.logger.log(f"{patient} enters recovery facility at {self.env.now:.2f}", 5)
     patient.recovery_start_time = float(self.env.now)
-    random_time = random.expovariate(1/(self.rec_time if patient.treatment_priority > 1 or not self.include_twist else self.rec_time*2))
+    random_time = np.random.exponential(scale=self.rec_time if patient.treatment_priority > 1 or not self.include_twist else self.rec_time*2)
     self.logger.log(f"{patient} recovery time is {random_time}")
     yield self.env.timeout(random_time)
     self.logger.log(f"  {patient} leaves recovery facility at {self.env.now:.2f}", 5)
