@@ -12,7 +12,7 @@ PREPARATION_TIME = 40
 OPERATION_TIME = 20
 RECOVERY_TIME = 40
 PATIENT_INTERARRIVAL_TIME = 24
-SIM_TIME = 1000
+SIM_TIME = 10000
 COMPLICATION_CHANGE = 0.01 # If complications happen during the operation, patient will skip recovery and go to ER instead
 RANDOM_SEED = 100 # Set to none if don't want to use seed
 VERBOSE = 1
@@ -236,9 +236,9 @@ class Dataset:
     avg_arrival_queue_time = round(np.average(dataset[:,0]),2)
     operation_utilization_time = round(np.sum(dataset[:,3]),2)
     operation_utilization_percentage = round((operation_utilization_time / SIM_TIME)*100, 2)
-    average_preparation_queue_length = round(sum(dataset[:,7])/len(self._patients), 2)
-    average_operation_queue_length = round(sum(dataset[:,8])/len(self._patients), 2)
-    average_recovery_queue_length = round(sum(dataset[:,9])/len(self._patients), 2)
+    average_preparation_queue_length = round(sum(dataset[:,7])/self.patients_arrived, 2)
+    average_operation_queue_length = round(sum(dataset[:,8])/self.patients_prepared, 2)
+    average_recovery_queue_length = round(sum(dataset[:,9])/self.patients_operated, 2)
 
     operation_blocked_ratio = round(self.operation_block_time / (self.operation_time + self.operation_block_time), 2)
     recovery_full_ratio = round(self.recovery_full_time/(self.recovery_full_time + self.recovery_time),2)
