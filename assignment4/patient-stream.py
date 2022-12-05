@@ -228,6 +228,7 @@ class Dataset:
     dataset = np.array(temp_list)
     return dataset
 
+  # Crude/fast way to split dataset to samples while leaving some unused data in-between the samples
   def split_dataset(self, splits):
     dataset = self.get_dataset()
     chunks = (splits*2)+1
@@ -242,7 +243,7 @@ class Dataset:
 
   def analyze(self):
     op_block_ratio = round(self.operation_blocked_time / self.operation_time, 2)
-    avg_prep_q_len = sum(self.preparation_queue_lengths)/len(self.preparation_queue_lengths)
+    avg_prep_q_len = round(sum(self.preparation_queue_lengths)/len(self.preparation_queue_lengths),2)
     complications = self.patient_complications
     self.logger.log(f"Operation was blocked for {op_block_ratio*100}% of the time", 1)
     self.logger.log(f"Average preparation/entrance queue length: {avg_prep_q_len}", 1)
@@ -302,18 +303,27 @@ def main():
       rec_time_unif=conf['rec_time_unif'],
       compl_chance=conf['compl_chance']
       )
-    env.process(hospital(env, dataset=dataset, facilities=facilities, interarrival_time=conf['inter_time'], interarrival_time_unif=conf['inter_time_unif']))
+    env.process(hospital(env, 
+      dataset=dataset, 
+      facilities=facilities, 
+      interarrival_time=conf['inter_time'], 
+      interarrival_time_unif=conf['inter_time_unif']
+    ))
     env.run(until=sim_time)
 
     samples = dataset.split_dataset(10)
     correlations = []
 
     for i in range(1, len(samples)):
-      correlation = np.corrcoef(samples[i-1][:,1], samples[i][:,1])
-      if math.isnan(correlation[1][0]):
-        correlations.append(0)
-      else:
-        correlations.append(correlation[1][0])
+      correlation = 0
+      X = samples[i-1][:,1]
+      Y = samples[i][:,1]
+      X_std = np.std(X)
+      Y_std = np.std(Y)
+      if X_std != 0 and Y_std != 0:
+        # Get the Pearson correlation coefficient
+        correlation = np.corrcoef(X, Y)[1][0]
+      correlations.append(round(correlation,4))
 
     logger.log(f"correlations between adjacent samples:\n{correlations}", 1)
     dataset.analyze()
